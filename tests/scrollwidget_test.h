@@ -7,6 +7,7 @@ private slots:
     void init();
     void cleanup();
     void openingDoesNotWrite();
+    void hardwareModeChangesUpdateWithoutWrites();
     void changesUseCorrectTypes();
     void rejectedWritesRestoreControls();
     void failedReadsDisableControls();

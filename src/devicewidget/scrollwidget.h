@@ -15,11 +15,14 @@ public:
     static bool isAvailable(const QDBusObjectPath &path);
 private:
     void refresh();
+    void pollMode();
     void apply(const QString &method, const QVariant &value);
     QDBusInterface *interface;
     QComboBox *mode = nullptr;
     QCheckBox *smartReel = nullptr;
     QCheckBox *acceleration = nullptr;
     QLabel *status;
+    bool modePollPending = false;
+    unsigned int modeGeneration = 0;
 };
 #endif

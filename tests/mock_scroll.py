@@ -53,6 +53,8 @@ class Mouse(dbus.service.Object):
     def getBattery(self): return self.read(75.0)
     @dbus.service.method('razer.device.power', out_signature='b')
     def isCharging(self): return self.read(True)
+    @dbus.service.method('org.razer.Test', in_signature='y')
+    def HardwareMode(self, value): self.mode = int(value)
     @dbus.service.method('org.razer.Test', out_signature='i')
     def Writes(self): return self.writes
     @dbus.service.method('org.razer.Test', in_signature='bb')

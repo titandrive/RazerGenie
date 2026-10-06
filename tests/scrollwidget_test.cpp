@@ -36,6 +36,21 @@ void ScrollWidgetTest::openingDoesNotWrite() {
         QVERIFY(widget.grab().save(screenshot));
     }
 }
+void ScrollWidgetTest::hardwareModeChangesUpdateWithoutWrites() {
+    ScrollWidget widget(path); widget.show();
+    auto *combo = widget.findChild<QComboBox *>("scrollMode");
+    QDBusInterface service("org.razer", path.path(), "org.razer.Test");
+    service.call("HardwareMode", QVariant::fromValue(static_cast<uchar>(0)));
+    QTRY_COMPARE_WITH_TIMEOUT(combo->currentData().toInt(), 0, 3500);
+    service.call("HardwareMode", QVariant::fromValue(static_cast<uchar>(1)));
+    QTRY_COMPARE_WITH_TIMEOUT(combo->currentData().toInt(), 1, 3500);
+    QCOMPARE(writes(), 0);
+    service.call("Fail", true, false);
+    QTRY_VERIFY_WITH_TIMEOUT(!combo->isEnabled(), 3500);
+    service.call("Fail", false, false);
+    QTRY_VERIFY_WITH_TIMEOUT(combo->isEnabled(), 3500);
+    QCOMPARE(writes(), 0);
+}
 void ScrollWidgetTest::changesUseCorrectTypes() {
     ScrollWidget widget(path);
     widget.findChild<QComboBox *>("scrollMode")->setCurrentIndex(0);
