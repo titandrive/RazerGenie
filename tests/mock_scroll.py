@@ -14,7 +14,9 @@ name = dbus.service.BusName('org.razer', bus)
 class Mouse(dbus.service.Object):
     mode, smart, acceleration, writes = 1, False, True, 0
     fail_read, fail_write = False, False
+    reads = 0
     def read(self, value):
+        self.reads += 1
         if self.fail_read:
             raise dbus.exceptions.DBusException('Mouse disconnected')
         return value
@@ -53,8 +55,13 @@ class Mouse(dbus.service.Object):
     def getBattery(self): return self.read(75.0)
     @dbus.service.method('razer.device.power', out_signature='b')
     def isCharging(self): return self.read(True)
+    @dbus.service.method('org.razer.Test', in_signature='ybb')
+    def HardwareSettings(self, mode, smart, acceleration):
+        self.mode, self.smart, self.acceleration = int(mode), bool(smart), bool(acceleration)
     @dbus.service.method('org.razer.Test', in_signature='y')
     def HardwareMode(self, value): self.mode = int(value)
+    @dbus.service.method('org.razer.Test', out_signature='i')
+    def Reads(self): return self.reads
     @dbus.service.method('org.razer.Test', out_signature='i')
     def Writes(self): return self.writes
     @dbus.service.method('org.razer.Test', in_signature='bb')

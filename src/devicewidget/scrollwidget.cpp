@@ -69,12 +69,12 @@ ScrollWidget::ScrollWidget(const QDBusObjectPath &path, QWidget *parent) : QWidg
     connect(refreshButton, &QPushButton::clicked, this, [this] { status->clear(); refresh(); });
     auto *timer = new QTimer(this);
     timer->setInterval(1000);
-    connect(timer, &QTimer::timeout, this, [this] { pollMode(); });
+    connect(timer, &QTimer::timeout, this, [this] { pollSettings(); });
     timer->start();
 }
 void ScrollWidget::refresh()
 {
-    ++modeGeneration;
+    ++settingsGeneration;
     QStringList errors;
     if (mode) {
         QSignalBlocker blocker(mode);
@@ -94,36 +94,54 @@ void ScrollWidget::refresh()
 }
 void ScrollWidget::apply(const QString &method, const QVariant &value)
 {
-    ++modeGeneration;
+    ++settingsGeneration;
     QDBusReply<void> reply = interface->call(method, value);
     status->clear();
     if (!reply.isValid()) status->setText(tr("Could not apply scroll setting: %1").arg(reply.error().message()));
     refresh(); // Restore controls to hardware readback, including effects of Smart-Reel.
 }
 
-void ScrollWidget::pollMode()
+void ScrollWidget::pollSettings()
 {
-    // Only poll the visible tab, and never change an open dropdown menu.
-    if (!mode || !isVisible() || modePollPending || mode->view()->isVisible())
+    if (!isVisible() || window()->isMinimized() || pollsPending || (mode && mode->view()->isVisible()))
         return;
-    modePollPending = true;
-    const auto generation = modeGeneration;
-    auto *watcher = new QDBusPendingCallWatcher(interface->asyncCall("getScrollMode"), this);
-    connect(watcher, &QDBusPendingCallWatcher::finished, this, [this, generation](QDBusPendingCallWatcher *call) {
-        QDBusPendingReply<uchar> reply = *call;
-        call->deleteLater();
-        modePollPending = false;
-        // A manual change or refresh supersedes older background responses.
-        if (generation != modeGeneration || !isVisible() || mode->view()->isVisible())
-            return;
-        const QString error = tr("Unable to read scrolling mode.");
-        QSignalBlocker blocker(mode);
-        const bool valid = reply.isValid() && reply.value() <= 1;
-        mode->setEnabled(valid);
-        mode->setCurrentIndex(valid ? mode->findData(reply.value()) : -1);
-        if (!valid && status->text().isEmpty())
-            status->setText(error);
-        else if (valid && status->text() == error)
-            status->clear();
-    });
+    QList<QPair<QWidget *, QString>> requests;
+    if (mode) requests.append({mode, "getScrollMode"});
+    if (smartReel) requests.append({smartReel, "getScrollSmartReel"});
+    if (acceleration) requests.append({acceleration, "getScrollAcceleration"});
+    pollsPending = requests.size();
+    pollErrors.clear();
+    const auto generation = settingsGeneration;
+    for (const auto &request : requests) {
+        auto *control = request.first;
+        auto *watcher = new QDBusPendingCallWatcher(interface->asyncCall(request.second), this);
+        connect(watcher, &QDBusPendingCallWatcher::finished, this, [this, generation, control](QDBusPendingCallWatcher *call) {
+            --pollsPending;
+            call->deleteLater();
+            // Do not replace newer manual changes, hidden controls or an open menu.
+            if (generation != settingsGeneration || !isVisible() || window()->isMinimized() || (mode && mode->view()->isVisible()))
+                return;
+            QSignalBlocker blocker(control);
+            if (control == mode) {
+                QDBusPendingReply<uchar> reply = *call;
+                const bool valid = reply.isValid() && reply.value() <= 1;
+                mode->setEnabled(valid);
+                mode->setCurrentIndex(valid ? mode->findData(reply.value()) : -1);
+                if (!valid) pollErrors.append(tr("Unable to read scrolling mode."));
+            } else {
+                auto *checkbox = static_cast<QCheckBox *>(control);
+                QDBusPendingReply<bool> reply = *call;
+                checkbox->setEnabled(reply.isValid());
+                checkbox->setChecked(reply.isValid() && reply.value());
+                if (!reply.isValid()) pollErrors.append(tr("Unable to read %1.").arg(checkbox->text()));
+            }
+            if (!pollsPending) {
+                // Background reads can clear their own errors, but preserve write errors.
+                const auto error = pollErrors.join("\n");
+                if (status->text().isEmpty() || status->text() == lastPollError)
+                    status->setText(error);
+                lastPollError = error;
+            }
+        });
+    }
 }

@@ -44,11 +44,34 @@ void ScrollWidgetTest::hardwareModeChangesUpdateWithoutWrites() {
     QTRY_COMPARE_WITH_TIMEOUT(combo->currentData().toInt(), 0, 3500);
     service.call("HardwareMode", QVariant::fromValue(static_cast<uchar>(1)));
     QTRY_COMPARE_WITH_TIMEOUT(combo->currentData().toInt(), 1, 3500);
+    auto *smart = widget.findChild<QCheckBox *>("scrollSmartReel");
+    auto *acceleration = widget.findChild<QCheckBox *>("scrollAcceleration");
+    service.call("HardwareSettings", QVariant::fromValue(static_cast<uchar>(0)), true, false);
+    QTRY_COMPARE_WITH_TIMEOUT(combo->currentData().toInt(), 0, 3500);
+    QTRY_VERIFY_WITH_TIMEOUT(smart->isChecked(), 3500);
+    QTRY_VERIFY_WITH_TIMEOUT(!acceleration->isChecked(), 3500);
     QCOMPARE(writes(), 0);
     service.call("Fail", true, false);
     QTRY_VERIFY_WITH_TIMEOUT(!combo->isEnabled(), 3500);
+    QTRY_VERIFY_WITH_TIMEOUT(!smart->isEnabled() && !acceleration->isEnabled(), 3500);
     service.call("Fail", false, false);
     QTRY_VERIFY_WITH_TIMEOUT(combo->isEnabled(), 3500);
+    QTRY_VERIFY_WITH_TIMEOUT(smart->isEnabled() && acceleration->isEnabled(), 3500);
+    QCOMPARE(writes(), 0);
+}
+void ScrollWidgetTest::hiddenTabDoesNotPoll() {
+    ScrollWidget widget(path);
+    QDBusInterface service("org.razer", path.path(), "org.razer.Test");
+    auto reads = [&service]() { return QDBusReply<int>(service.call("Reads")).value(); };
+    const auto initial = reads();
+    QTest::qWait(1250);
+    QCOMPARE(reads(), initial);
+    widget.show();
+    QTRY_VERIFY_WITH_TIMEOUT(reads() > initial, 3500);
+    widget.hide(); QTest::qWait(100);
+    const auto hidden = reads();
+    QTest::qWait(1250);
+    QCOMPARE(reads(), hidden);
     QCOMPARE(writes(), 0);
 }
 void ScrollWidgetTest::changesUseCorrectTypes() {

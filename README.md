@@ -46,7 +46,7 @@ RazerGenie supports multiple languages! If your language isn't yet included or y
 
 ### Additional device controls in this fork
 
-A dedicated Scroll wheel tab includes tactile/free-spin mode, Smart-Reel and scroll acceleration when the daemon advertises both getter and setter methods. Opening or refreshing the page only reads hardware state. While the Scroll wheel tab is visible, asynchronous mode reads update the dropdown once per second to follow the mouse button. Background responses do not overwrite a newer manual change or an open dropdown. Failed writes display an error and restore the controls to the latest readback; unavailable readings disable the affected controls until Refresh succeeds.
+A dedicated Scroll wheel tab includes tactile/free-spin mode, Smart-Reel and scroll acceleration when the daemon advertises both getter and setter methods. Opening or refreshing the page only reads hardware state. While the Scroll wheel tab is visible, asynchronous reads update mode, Smart-Reel and acceleration once per second to follow hardware-button or external-tool changes. Background responses do not overwrite a newer manual change or an open dropdown. Failed writes display an error and restore the controls to the latest readback; unavailable readings disable the affected controls until Refresh succeeds.
 
 For constant free-spin, disable Smart-Reel. Charging status displays as unknown when the daemon does not provide it or the query fails. Devices with reactive lighting expose a duration selector (500, 1000, 1500 or 2000 ms); this is independent of breathing rate, which the standard API does not expose.
 

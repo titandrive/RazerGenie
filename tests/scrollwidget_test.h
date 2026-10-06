@@ -8,6 +8,7 @@ private slots:
     void cleanup();
     void openingDoesNotWrite();
     void hardwareModeChangesUpdateWithoutWrites();
+    void hiddenTabDoesNotPoll();
     void changesUseCorrectTypes();
     void rejectedWritesRestoreControls();
     void failedReadsDisableControls();
