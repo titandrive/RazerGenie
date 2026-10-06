@@ -55,6 +55,7 @@ ScrollWidget::ScrollWidget(const QDBusObjectPath &path, QWidget *parent) : QWidg
     status = new QLabel(this); status->setObjectName("scrollStatus"); status->setWordWrap(true); layout->addWidget(status);
     auto *refreshButton = new QPushButton(tr("Refresh"), this);
     refreshButton->setObjectName("refreshScrollSettings"); layout->addWidget(refreshButton);
+    layout->addStretch();
     refresh(); // Read actual values before connecting signals; opening the page sends no writes.
     if (mode) connect(mode, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int) {
         apply("setScrollMode", QVariant::fromValue(static_cast<uchar>(mode->currentData().toUInt())));

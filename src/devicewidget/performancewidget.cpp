@@ -7,7 +7,6 @@
 #include "dpicomboboxwidget.h"
 #include "dpisliderwidget.h"
 #include "util.h"
-#include "scrollwidget.h"
 
 #include <QComboBox>
 #include <QLabel>
@@ -68,9 +67,6 @@ PerformanceWidget::PerformanceWidget(libopenrazer::Device *device)
         });
     }
 
-    if (ScrollWidget::isAvailable(device->objectPath()))
-        verticalLayout->addWidget(new ScrollWidget(device->objectPath(), this));
-
     /* Spacer to bottom */
     auto *spacer = new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::Expanding);
     verticalLayout->addItem(spacer);
@@ -80,5 +76,5 @@ PerformanceWidget::~PerformanceWidget() = default;
 
 bool PerformanceWidget::isAvailable(libopenrazer::Device *device)
 {
-    return device->hasFeature("dpi") || device->hasFeature("poll_rate") || ScrollWidget::isAvailable(device->objectPath());
+    return device->hasFeature("dpi") || device->hasFeature("poll_rate");
 }
